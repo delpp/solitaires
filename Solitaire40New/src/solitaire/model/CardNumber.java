@@ -14,17 +14,17 @@ public enum CardNumber {
 	jack(11),
 	queen(12),
 	king(13);
-	
-	
+
+
 	private final int number;
-	
+
 	private CardNumber (int number) {
 		this.number = number;
 	}
-	
+
 	public int getNumber() {
 		return number;
 	}
-	
-	
+
+
 }

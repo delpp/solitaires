@@ -1,28 +1,28 @@
 package solitaire.model;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 
 public class IOGame {
-	
+
 	public static void savaGame(GameBoard gameBoard) throws IOException{
 
-		ObjectOutputStream output = new ObjectOutputStream(new FileOutputStream("saveGame.pas"));
-		
-		output.writeObject(gameBoard);
-		
+		DataOutputStream output = new DataOutputStream(new FileOutputStream("saveGame.pas"));
+
+		output.writeUTF(gameBoard.getCode());
+
 		output.close();
 	}
-	
-	public static GameBoard loadGame() throws IOException, ClassNotFoundException{
-		GameBoard gameBoard = null;
-		ObjectInputStream input = new ObjectInputStream(new FileInputStream("saveGame.pas"));
-		gameBoard = (GameBoard) input.readObject();
+
+	public static String loadGame() throws IOException {
+		String readString;
+		DataInputStream input = new DataInputStream(new FileInputStream("saveGame.pas"));
+		readString = input.readUTF();
 		input.close();
-		return gameBoard;
+		System.out.println("***************** ODCZYT *******************");
+		System.out.println("odczytano");
+		System.out.println(readString);
+		System.out.println("********************************************");
+		return readString;
 	}
-	
+
 }

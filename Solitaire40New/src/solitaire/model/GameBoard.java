@@ -1,51 +1,58 @@
 package solitaire.model;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.*;
 
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.PixelReader;
 
-public class GameBoard {
+public class GameBoard implements Serializable {
+	private static final long serialVersionUID = 1L;
+
 	private Deck deck;
-	
+
 	final int NUMBEROFGAMESTACKS;
 	final int NUMBEROFFINALSTACKS;
-	
+
 	private ArrayList<Stack> stacks = new ArrayList<Stack>();
+	private ArrayList<Button> buttons = new ArrayList<Button>();
 	private Stack startStack;
 	private Stack putAwayStack;
 	private Stack[] gameStacks;
 	private Stack[] finalStacks;
 	private HandStack handStack;
-	
-	private Stack stackWhenPressedMouse; // the stack on which the mouse was pressed 
+
+	private Stack stackWhenPressedMouse; // the stack on which the mouse was pressed
 	private Stack stackWhenReleaseMouse; // the stack over which the mouse was released
+	private Button buttonPressed;
 	private AnimateCards animateCards;
 	private boolean animateInProgress = false;
-	Optional<Stack> areaStack;
+	//Optional<Stack> areaStack;
+	//Optional<Button> areaButton;
 	private Card testCard;
-	
+
 	int numberPossibleMove;
-	
+
 	private GraphicsContext gc;
-	
-	public GameBoard(GraphicsContext gc, PixelReader imagesOfCards, int numberOfDecks, int numberOfGameStacks, int numberOfFinalStacks) {		
+
+	public GameBoard(GraphicsContext gc, PixelReader imagesOfCards, PixelReader imagesOfButtons, int numberOfDecks, int numberOfGameStacks, int numberOfFinalStacks) {
 		this.gc = gc;
 		this.NUMBEROFGAMESTACKS = numberOfGameStacks;
 		this.NUMBEROFFINALSTACKS = numberOfFinalStacks;
-		
+
 		newDeck(imagesOfCards, numberOfDecks);
-		
+
+		buttons.add(new Button("SAVE", imagesOfButtons, 680, 105, 2));
+		buttons.add(new Button("LOAD", imagesOfButtons, 680+80, 105, 3));
+
 		List<CardType> cardTypes = new ArrayList<CardType>();
 		cardTypes.add(CardType.karo);
 		cardTypes.add(CardType.kier);
 		cardTypes.add(CardType.pik);
 		cardTypes.add(CardType.trefl);
-		
-		List<CardNumber> cardNumbers = new ArrayList<CardNumber>();		
+
+		List<CardNumber> cardNumbers = new ArrayList<CardNumber>();
 		cardNumbers.add(CardNumber.as);
 		cardNumbers.add(CardNumber.two);
 		cardNumbers.add(CardNumber.three);
@@ -59,44 +66,44 @@ public class GameBoard {
 		cardNumbers.add(CardNumber.jack);
 		cardNumbers.add(CardNumber.queen);
 		cardNumbers.add(CardNumber.king);
-		
-		
+
+
 		startStack = new Stack("startStack", imagesOfCards, 99, 10, 0, 0, 1, 1, 0, 0, 1, cardTypes, cardNumbers, 5, 0);
 		putAwayStack = new Stack("putAwayStack", imagesOfCards, 9, 10, 0, 30, 1, 7, 7, 0, 1, cardTypes, cardNumbers, 5, 0);
 		handStack = new HandStack("handStack", imagesOfCards, 99, 400, 0, 30, 12, 12, 12, 0, 12, cardTypes, cardNumbers, 0, 0, 10, 0, 0);
-		
-		createGameStacks(NUMBEROFGAMESTACKS, cardTypes, cardNumbers, imagesOfCards);		
+
+		createGameStacks(NUMBEROFGAMESTACKS, cardTypes, cardNumbers, imagesOfCards);
 		createFinalStacks(NUMBEROFFINALSTACKS, imagesOfCards);
-		
+
 		for (int i = 0; i < NUMBEROFGAMESTACKS; i++) stacks.add(gameStacks[i]);
 		for (int i = 0; i < NUMBEROFFINALSTACKS; i++) stacks.add(finalStacks[i]);
-		
+
 		stacks.add(startStack);
 		stacks.add(putAwayStack);
 		stacks.add(handStack);
-		
+
 		putAwayStack.addAcceptedStack(startStack);
 
 		handStack.setSourceStack(startStack);
-		
+
 		animateCards = new AnimateCards();
 	}
-	
+
 	private void createGameStacks(int numberOfGameStacks, List<CardType> cardTypes, List<CardNumber> cardNumbers, PixelReader imageCard) {
 		gameStacks = new Stack[numberOfGameStacks];
-		for (int i = 0; i < numberOfGameStacks; i++) 
-			gameStacks[i] = new Stack("gameStack" + i, imageCard, 99 + i*75, 179, 0, 30, 2, 104, 104, 2, 3, cardTypes, cardNumbers, 5, 1);
-		
+		for (int i = 0; i < numberOfGameStacks; i++)
+			gameStacks[i] = new Stack("gameStack" + i, imageCard, 99 + i*75, 179, 0, 30, 2, 104, 104, 2, 3, cardTypes, cardNumbers, 5, 0);
+
 		for (int i = 0; i < numberOfGameStacks; i++) {
 			for (int j = 0; j < numberOfGameStacks; j++)
 				gameStacks[i].addAcceptedStack(gameStacks[j]);
 			gameStacks[i].addAcceptedStack(putAwayStack);
 		}
 	}
-	
+
 	private void createFinalStacks(int numberOfFinalStacks, PixelReader imageCard) {
 		List<List<CardType>> listFinalStackAcceptTypeCard = new ArrayList<List<CardType>>();
-		
+
 		List<CardType> listFinalStackAcceptTypeCard1 = new ArrayList<CardType>();
 		listFinalStackAcceptTypeCard1.add(CardType.trefl);
 		List<CardType> listFinalStackAcceptTypeCard2 = new ArrayList<CardType>();
@@ -105,47 +112,65 @@ public class GameBoard {
 		listFinalStackAcceptTypeCard3.add(CardType.pik);
 		List<CardType> listFinalStackAcceptTypeCard4 = new ArrayList<CardType>();
 		listFinalStackAcceptTypeCard4.add(CardType.karo);
-		
+
 		listFinalStackAcceptTypeCard.add(listFinalStackAcceptTypeCard1);
 		listFinalStackAcceptTypeCard.add(listFinalStackAcceptTypeCard2);
 		listFinalStackAcceptTypeCard.add(listFinalStackAcceptTypeCard3);
 		listFinalStackAcceptTypeCard.add(listFinalStackAcceptTypeCard4);
-		
+
 		List<CardNumber> setFinalStackAcceptCardNumber = new ArrayList<CardNumber>();
 		setFinalStackAcceptCardNumber.add(CardNumber.as);
 
 		finalStacks = new Stack[numberOfFinalStacks];
-		for (int i = 0; i < numberOfFinalStacks; i++) 
+		for (int i = 0; i < numberOfFinalStacks; i++)
 			finalStacks[i] = new Stack("finalStack" + i, imageCard, 249 + i*75, 10, 0, 0, 0, 13, 1, 1, 1, listFinalStackAcceptTypeCard.get(i%4), setFinalStackAcceptCardNumber, 4, i%4 + 1);
-		
+
 		for (int i = 0; i < numberOfFinalStacks; i++) {
 			for (int j = 0; j < gameStacks.length; j++)
 				finalStacks[i].addAcceptedStack(gameStacks[j]);
 			finalStacks[i].addAcceptedStack(putAwayStack);
 		}
-		
+
 	}
-	
+
 	public void newDeck(PixelReader imageCard, int decks) {
 		deck = new Deck(imageCard, decks);
 	}
-	
+
+	public void collectCardsToDeck(){
+		for (Stack stack : stacks){
+			if (stack.getStackSize() > 0){
+				deck.collectCards(stack.getStack());
+				stack.getStack().clear();
+			}
+		}
+
+		System.out.println("***** STAN PO POWROCIE DO TALII *****");
+		stacks.stream().forEach(x -> {
+			System.out.println(x.toString());
+		});
+		System.out.println("DECK: " + deck.toString());
+		System.out.println("rozmiar DECK: " + deck.size());
+		System.out.println("*************************************");
+	}
+
 	public void shuffleDeck() {
 		deck.shuffle();
 	}
-	
+
 	public void newGame(PixelReader imageCard, int decks) {
 		deck = new Deck(imageCard, decks);
 		stacks.stream().forEach(x -> x.getStack().clear());
 		shuffleDeck();
 		distributeCards();
 	}
-	
-	public void distributeCards() {	
+
+	public void distributeCards() {
+		Stack stack;
 		for (int j = 0; j < 4; j++)
 			for (int i = 0; i < stacks.size(); i++) {
-				Stack stack = stacks.get(i);
-				if (stack.getName().substring(0, 9).equals("gameStack")) {						
+				stack = stacks.get(i);
+				if (stack.getName().substring(0, 9).equals("gameStack")) {
 					stacks.get(i).addCard(deck.handOutCard());
 				}
 			}
@@ -154,137 +179,153 @@ public class GameBoard {
 
 		for (int i = 0; i < numerOfRestCardsToDistribute; i++)
 			startStack.addCard(deck.handOutCard());
-		
+
 		stacks.stream().forEach(x -> x.setImageOnCards());
+
+		stacks.stream().forEach(x -> {
+			System.out.println(x.toString());
+			System.out.println(x.getCode());
+			System.out.println("***********************");
+		});
+
+		getCode();
 	}
-	
+
 	public void drawGameBoard() {
 		stacks.stream().forEach(x -> x.drawStack(gc));
+		buttons.stream().forEach((x -> x.drawButton(gc)));
 		animateCards.drawStack(gc);
 	}
-	
+
 	public void updatePosition() {
 		animateInProgress = animateCards.updatePosition();
-		
+
 		if ((!animateInProgress) && (animateCards.getStack().size() > 0)){
 			animateCards.getSourceStack().addCards(animateCards.getStack());
 			animateCards.getStack().clear();
 			countPossibleMoves();
 		}
-		
+
 	}
-	
-		
+
 	private boolean moveCards(Stack sourceStack, Stack destinationStack) {
 		boolean movedCards = false;
 		List<Card> cards = new ArrayList<Card> (sourceStack.takeCards());
-	
-		if (destinationStack.getNumberOfAcceptedCardInOneMove() >= cards.size()) { 		
+
+		if (destinationStack.getNumberOfAcceptedCardInOneMove() >= cards.size()) {
 			movedCards = destinationStack.addCards(cards);
 			sourceStack.updateData();
 			sourceStack.setImageOnCards();
 		}
 		else sourceStack.addCards(cards);
-		
+
 		return movedCards;
 	}
-		
+
 	private void setAnimateMoveBackCards(HandStack handStack, Stack destinationStack, int numberFrames) {
 		animateCards.setSourceStack(destinationStack);
 		animateCards.setStack(handStack.takeCards());
 		animateCards.setPositionXOnBoard(handStack.getPositionXOnBoard() - handStack.getDeltaX());
 		animateCards.setPositionYOnBoard(handStack.getPositionYOnBoard() - handStack.getDeltaY());
-		
+
 		animateCards.setShiftCardX(handStack.getShiftCardX());
 		animateCards.setShiftCardY(handStack.getShiftCardY());
-		
+
 		animateCards.setNumberShownCards(handStack.getNumberShownCards());
 
 		animateCards.setTargetXPosition(handStack.getTargetPositionXOnBoard());
 		animateCards.setTargetYPosition(handStack.getTargetPositionYOnBoard());
-		
-		animateCards.setNumberAnimatedFrames(numberFrames);		
+
+		animateCards.setNumberAnimatedFrames(numberFrames);
 		animateCards.setSteps();
-		
+
 		handStack.updateData();
 	}
-	
+
 	public int countPossibleMoves() {
 		numberPossibleMove = 0;
-		
+
 		if (!animateInProgress) {
 			System.out.println("SPRAWDZAM MOŻLIWE RUCHY");
-			
+
 			System.out.println("––––––––––––––––––");
 			System.out.println("Sprawdzam startStack");
-			if (startStack.getStackSize() > 0) {	
-				numberPossibleMove = 1;		
+			if (startStack.getStackSize() > 0) {
+				numberPossibleMove = 1;
 				System.out.println("Można wziąć kartę ze stosu startowego");
 			}
-			
+
 			System.out.println("––––––––––––––––––");
 			System.out.println("Sprawdzam putAwayStack. Rozmiar: " + putAwayStack.getStackSize());
-			
-			if (putAwayStack.getStackSize() > 0) {	
-			
-				testCard = putAwayStack.getCard(putAwayStack.getStackSize()-1);	
-				
+
+			if (putAwayStack.getStackSize() > 0) {
+
+				testCard = putAwayStack.getCard(putAwayStack.getStackSize()-1);
+
 				System.out.println("Testuję kartę: " + testCard + " z putAwayStack");
-				numberPossibleMove += calculatePossibleMatchesCardToStack(testCard, -1);				
-			}	
-			
+				numberPossibleMove += calculatePossibleMatchesCardToStack(testCard, -1);
+			}
+
 
 			for (int i = 0; i < gameStacks.length; i++) {
-				if (gameStacks[i].getStackSize() > 0) {	
-					
-					testCard = gameStacks[i].getCard(gameStacks[i].getStackSize()-1);	
-					
+				if (gameStacks[i].getStackSize() > 0) {
+
+					testCard = gameStacks[i].getCard(gameStacks[i].getStackSize()-1);
+
 					System.out.println("Testuję kartę: " + testCard + " z gameStacks" + gameStacks[i].getName());
-					numberPossibleMove += calculatePossibleMatchesCardToStack(testCard, i);				
-				}	
+					numberPossibleMove += calculatePossibleMatchesCardToStack(testCard, i);
+				}
 			}
-			
-			System.out.println("LICZBA MOŻLIWYCH RUCHÓW: " + numberPossibleMove);			
+
+			System.out.println("LICZBA MOŻLIWYCH RUCHÓW: " + numberPossibleMove);
 		}
-	
+
 		return numberPossibleMove;
 	}
-	
-	public int calculatePossibleMatchesCardToStack(Card testCard, int numberOfSourceGameStack) {	
+
+	public int calculatePossibleMatchesCardToStack(Card testCard, int numberOfSourceGameStack) {
 		int counter = 0;
-		
+
 		counter = calculatePossibleMatchesCardToGameStack(testCard, numberOfSourceGameStack);
 		counter += calculatePossibleMatchesCardToFinalStack(testCard);
-		
+
 		return counter;
 	}
-	
+
 	public int calculatePossibleMatchesCardToGameStack(Card testCard, int numberOfSourceGameStack) {
+		System.out.println("");
+		System.out.println("numberOfSourceGameStack: " + numberOfSourceGameStack);
 		int counter = 0;
-		for (int i = 0; i < gameStacks.length; i++) {	
+		for (int i = 0; i < gameStacks.length; i++) {
 			if (i == numberOfSourceGameStack) continue;
 			if (isCardFitsToStack(testCard, gameStacks[i])) {
-				if (numberOfSourceGameStack > -1) 
-					if (!isPossibleToBackToSource(numberOfSourceGameStack)) 
+				System.out.println("karta: " + testCard + " pasuje do stosu " + gameStacks[i].getName());
+				if (numberOfSourceGameStack > -1)
+					if (!isPossibleToBackToSource(numberOfSourceGameStack))
 						counter++;
+					else;
+
+				else counter++;
 			}
-		}	
+		}
+		System.out.println("counter: " + counter);
+		System.out.println("");
 		return counter;
 	}
-	
+
 	private boolean isPossibleToBackToSource(int numberOfSourceGameStack) {
 		boolean isPossibleToBack = false;
-		
-		if (gameStacks[numberOfSourceGameStack].getStackSize() >= 2) {	
-		
+
+		if (gameStacks[numberOfSourceGameStack].getStackSize() >= 2) {
+
 			handStack.addCard(gameStacks[numberOfSourceGameStack].takeCardFromTop());
 			Card cardToTest = handStack.takeCardFromTop();
-			
+
 			System.out.println("**********************");
 			System.out.println("Testowana karta w ręku: " + cardToTest);
 			System.out.println("Stos, z którgo była zabrana karta: " + gameStacks[numberOfSourceGameStack].toString());
 			System.out.println("**********************");
-			
+
 			if (isCardFitsToStack(cardToTest, gameStacks[numberOfSourceGameStack])) {
 				gameStacks[numberOfSourceGameStack].addCard(cardToTest);
 				isPossibleToBack =  true;
@@ -294,8 +335,8 @@ public class GameBoard {
 				isPossibleToBack = false;
 			}
 		}
-		else isPossibleToBack = true;
-		
+		// else isPossibleToBack = true;
+
 		System.out.println("Czy karta może wrócić na miejsce? :" + isPossibleToBack);
 		System.out.println("Stos, z którgo była zabrana karta i z powrotem odlożona: " + gameStacks[numberOfSourceGameStack].toString());
 		System.out.println("**********************");
@@ -303,99 +344,185 @@ public class GameBoard {
 		System.out.println("**********************");
 		return isPossibleToBack;
 	}
-	
+
 	public int calculatePossibleMatchesCardToFinalStack(Card testCard) {
 		int counter = 0;
-		for (int i = 0; i < finalStacks.length; i++) {					
+		for (int i = 0; i < finalStacks.length; i++) {
 			if (isCardFitsToStack(testCard, finalStacks[i])) counter++;
-		}	
+		}
 		return counter;
 	}
-	
+
 	public boolean isCardFitsToStack(Card testCard, Stack stack) {
 		if (stack.isAcceptCard(testCard)) return true;
 		else return false;
 	}
-	
-	
-	public void actionOnPressedMouse(double x, double y) {
+
+
+	public void actionOnPressedMouse(double x, double y) throws IOException, ClassNotFoundException {
 
 		System.out.println("naciśnięto klawisz myszki. Poz X: " + x + ". Poz Y: " + y);
-	
-		areaStack = stacks.stream().filter(z -> z.isMyActiveArea(x, y)).findFirst();		
-		if (areaStack.isPresent()) {
-			stackWhenPressedMouse = areaStack.get();
-			
+
+		//areaStack = stacks.stream().filter(z -> z.isMyActiveArea(x, y)).findFirst();
+
+		for (Stack stack : stacks){
+			if (stack.isMyActiveArea(x, y)){
+				stackWhenPressedMouse = stack;
+				break;
+			}
+		}
+
+		if (stackWhenPressedMouse != null) {
+			//stackWhenPressedMouse = areaStack.get();
+
 			if (stackWhenPressedMouse.getName().equals("startStack"))	{
 				moveCards(stackWhenPressedMouse, putAwayStack);
 				countPossibleMoves();
 			}
 			else
-			{	
-				double deltaX = x 
-						- (stackWhenPressedMouse.getPositionXOnBoard() 
-						+ stackWhenPressedMouse.getShiftCardX() * (stackWhenPressedMouse.getNumberShownCards() - (stackWhenPressedMouse.getStackSize() - stackWhenPressedMouse.getPressedCardNumberInStack())));				
-				double deltaY = y 
-						- (stackWhenPressedMouse.getPositionYOnBoard() 
-						+ stackWhenPressedMouse.getShiftCardY() * (stackWhenPressedMouse.getNumberShownCards() - (stackWhenPressedMouse.getStackSize() - stackWhenPressedMouse.getPressedCardNumberInStack())));			
-				
+			{
+				double deltaX = x
+						- (stackWhenPressedMouse.getPositionXOnBoard()
+						+ stackWhenPressedMouse.getShiftCardX() * (stackWhenPressedMouse.getNumberShownCards() - (stackWhenPressedMouse.getStackSize() - stackWhenPressedMouse.getPressedCardNumberInStack())));
+				double deltaY = y
+						- (stackWhenPressedMouse.getPositionYOnBoard()
+						+ stackWhenPressedMouse.getShiftCardY() * (stackWhenPressedMouse.getNumberShownCards() - (stackWhenPressedMouse.getStackSize() - stackWhenPressedMouse.getPressedCardNumberInStack())));
+
 				if (moveCards(stackWhenPressedMouse, handStack)) {
-					handStack.setSourceStack(stackWhenPressedMouse);	
-					
-					handStack.setDeltaX(deltaX);					
+					handStack.setSourceStack(stackWhenPressedMouse);
+
+					handStack.setDeltaX(deltaX);
 					handStack.setDeltaY(deltaY);
-										
+
 					handStack.setPositionXOnBoard((int)x);
 					handStack.setPositionYOnBoard((int)y);
 					handStack.setNumberPossibleVisibleCardsInFront(stackWhenPressedMouse.getNumberPossibleVisibleCardsInFront());
 					handStack.setImageOnCards();
-					
+
 					handStack.setTargetPositionXOnBoard(x - deltaX);
 					handStack.setTargetPositionYOnBoard(y - deltaY);
 				}
-			}		
+			}
+			stackWhenPressedMouse = null;
+		}
+
+		for (Button button : buttons){
+			if (button.isMyActiveArea(x, y)){
+				buttonPressed = button;
+				break;
+			}
+		}
+
+		//areaButton = buttons.stream().filter(z -> z.isMyActiveArea(x, y)).findFirst();
+		if (buttonPressed != null){
+			//buttonPressed = areaButton.get();
+			System.out.println("Nacisnięto button: " + buttonPressed.getName());
+			if (buttonPressed.getName().equals("SAVE")){
+				IOGame.savaGame(this);
+			}
+			if (buttonPressed.getName().equals("LOAD")){
+				String gameBoardAsString = IOGame.loadGame();
+
+				collectCardsToDeck();
+
+				String[] stackAsString = gameBoardAsString.split("!");
+
+				System.out.println(stackAsString.length);
+
+				for (int i = 0; i < stackAsString.length; i++){
+					stacks.get(i).takeCardsFromDeck(stackAsString[i], deck);
+				}
+
+				System.out.println(deck.toString());
+
+				//Arrays.stream(stackAsString).forEach(z -> System.out.println(z.toString()));
+
+
+			}
+			buttonPressed = null;
 		}
 	}
-	
+
 	public void actionOnDraggedMouse(double x, double y) {
 		if (handStack.getStackSize() > 0) {
 			handStack.setPositionXOnBoard((int)x);
 			handStack.setPositionYOnBoard((int)y);
 		}
 	}
-	
+
 	public void actionOnReleasedMouse(double x, double y) {
 		if (handStack.getStackSize() > 0) {
-			areaStack = stacks.stream().filter(z -> z.isMyArea(x, y)).findFirst();
+
+			for (Stack stack : stacks){
+				if (stack.isMyArea(x, y)){
+					stackWhenReleaseMouse = stack;
+					break;
+				}
+			}
+
+			//areaStack = stacks.stream().filter(z -> z.isMyArea(x, y)).findFirst();
 
 			boolean cardsMoved = false;
-			
-			if (areaStack.isPresent()) {	
-				stackWhenReleaseMouse = areaStack.get();
+
+			if (stackWhenReleaseMouse != null) {
+				//stackWhenReleaseMouse = areaStack.get();
 				System.out.println("odłożono myszkę na stosie: " + stackWhenReleaseMouse.getName());
 				System.out.println("Stan w handStack przed próbą operacji przeniesienia: " + handStack);
-				
+
 				if (isAcceptCard(stackWhenReleaseMouse, handStack))
-				 {					
-						cardsMoved = moveCards(handStack, stackWhenReleaseMouse);
-						countPossibleMoves();
-						handStack.getSourceStack().setImageOnCards();
+				{
+					cardsMoved = moveCards(handStack, stackWhenReleaseMouse);
+					countPossibleMoves();
+					handStack.getSourceStack().setImageOnCards();
 				}
-			}			
+			}
 			if (!cardsMoved) setAnimateMoveBackCards(handStack, handStack.getSourceStack(), 10);
-			
+
 		}
+		stackWhenReleaseMouse = null;
 	}
-	
+
 	private boolean isAcceptCard(Stack destinationStack, HandStack handStack) {
-		if ((destinationStack.isAcceptCardsFromStack(handStack.getSourceStack())) 
+		if ((destinationStack.isAcceptCardsFromStack(handStack.getSourceStack()))
 				&& (destinationStack.isAcceptCard(handStack.getCard(0)))) return true;
 		else return false;
 	}
-	
+
+	public String getCode(){
+		StringBuilder gameBoardAsString = new StringBuilder();
+		stacks.stream().forEach(x -> {
+			gameBoardAsString.append(x.getCode());
+		});
+
+		System.out.println(gameBoardAsString);
+		return gameBoardAsString.toString();
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+
+		result = prime * result + Arrays.hashCode(stacks.toArray());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		GameBoard other = (GameBoard) obj;
+		if (stacks.equals(other.stacks))
+			return false;
+		return true;
+	}
+
 	@Override
 	public String toString() {
-		return deck.toString() + "\n"
-				+ Arrays.toString(stacks.toArray());
+		return Arrays.toString(stacks.toArray());
 	}
 }
