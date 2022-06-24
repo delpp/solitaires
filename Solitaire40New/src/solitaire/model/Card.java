@@ -1,4 +1,4 @@
-package solitaire.model;
+package model;
 
 import javafx.scene.image.PixelReader;
 import javafx.scene.image.WritableImage;

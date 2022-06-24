@@ -1,4 +1,4 @@
-package solitaire.model;
+package model;
 
 public enum CardType {
 	pik(1),

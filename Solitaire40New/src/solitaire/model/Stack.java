@@ -1,4 +1,4 @@
-package solitaire.model;
+package model;
 
 import java.io.Serializable;
 import java.util.*;
@@ -121,6 +121,9 @@ public class Stack implements Serializable {
 		counter = 0;
 	}
 
+	public String getName() {
+		return name;
+	}
 
 	public List<Card> getStack() {
 		return stack;
@@ -176,6 +179,10 @@ public class Stack implements Serializable {
 
 	public int getPressedCardNumberInStack() {
 		return pressedCardNumberInStack;
+	}
+
+	public void setPressedCardNumberInStack(int pressedCardNumberInStack) {
+		this.pressedCardNumberInStack = pressedCardNumberInStack;
 	}
 
 	public boolean isAcceptCardsFromStack (Stack stack){
@@ -359,10 +366,6 @@ public class Stack implements Serializable {
 			gc.drawImage(imageWhenEmpty, positionXOnBoard, positionYOnBoard);
 
 		}
-	}
-
-	public String getName() {
-		return name;
 	}
 
 	public String getCode(){

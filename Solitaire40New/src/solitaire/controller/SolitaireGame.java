@@ -1,4 +1,4 @@
-package solitaire.controller;
+package controller;
 
 import javafx.animation.AnimationTimer;
 import javafx.scene.Group;
@@ -9,7 +9,10 @@ import javafx.scene.image.Image;
 import javafx.scene.image.PixelReader;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
-import solitaire.model.GameBoard;
+import model.GameBoard;
+
+import java.io.IOException;
+
 
 public class SolitaireGame {
 	private final int WIDTH = 900;
@@ -24,8 +27,10 @@ public class SolitaireGame {
 	private Canvas canvas;
 	private Scene scene;
 	private PixelReader cardsImagesPixelReader;
+	private PixelReader buttonsImagesPixelReader;
 	private Image cardsImages;
 	private Image boardImage;
+	private Image buttonImages;
 	private GraphicsContext gc;
 	private GameBoard gameBoard;
 	
@@ -52,7 +57,9 @@ public class SolitaireGame {
 	public void initialize() {		
 		cardsImages = new Image("/deck.png");
 		boardImage = new Image("/background.png");
-		cardsImagesPixelReader = cardsImages.getPixelReader();		
+		buttonImages = new Image("/buttons.png");
+		cardsImagesPixelReader = cardsImages.getPixelReader();
+		buttonsImagesPixelReader = buttonImages.getPixelReader();
 		root = new Group();
 		canvas = new Canvas(WIDTH, HEIGHT);		
 		root.getChildren().add(canvas);
@@ -62,12 +69,18 @@ public class SolitaireGame {
 		stage.setResizable(true);
 		stage.sizeToScene();
 			
-		gameBoard = new GameBoard(gc, cardsImagesPixelReader, 2, NUMBEROFGAMESTACKS, NUMBEROFFINALSTACKS);
+		gameBoard = new GameBoard(gc, cardsImagesPixelReader, buttonsImagesPixelReader,2, NUMBEROFGAMESTACKS, NUMBEROFFINALSTACKS);
 
 		gameBoard.shuffleDeck();				
 		gameBoard.distributeCards();
 		
-		scene.setOnMousePressed(mouseEvent -> pressedMouse(mouseEvent));		
+		scene.setOnMousePressed(mouseEvent -> {
+			try {
+				pressedMouse(mouseEvent);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		});
 		scene.setOnMouseDragged(mouseEvent -> draggedMouse(mouseEvent));
 		scene.setOnMouseReleased(mouseEvent -> releasedMouse(mouseEvent));
 	}
@@ -83,7 +96,7 @@ public class SolitaireGame {
 		gameBoard.drawGameBoard();
 	}
 	
-	public void pressedMouse(MouseEvent mouseEvent){
+	public void pressedMouse(MouseEvent mouseEvent) throws IOException {
 		double x = mouseEvent.getSceneX();
 		double y = mouseEvent.getSceneY();
 		

@@ -1,4 +1,4 @@
-package solitaire.model;
+package model;
 
 public enum CardNumber {
 	as(1),

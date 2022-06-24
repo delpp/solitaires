@@ -1,4 +1,4 @@
-package solitaire.model;
+package model;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -15,13 +15,16 @@ public class GameBoard implements Serializable {
 	final int NUMBEROFGAMESTACKS;
 	final int NUMBEROFFINALSTACKS;
 
-	private ArrayList<Stack> stacks = new ArrayList<Stack>();
-	private ArrayList<Button> buttons = new ArrayList<Button>();
+	private List<Stack> stacks = new ArrayList<Stack>();
+	private List<Button> buttons = new ArrayList<Button>();
 	private Stack startStack;
 	private Stack putAwayStack;
 	private Stack[] gameStacks;
 	private Stack[] finalStacks;
 	private HandStack handStack;
+
+	private List<Undo> undoSteps = new ArrayList<Undo>();
+	private Undo currentUndoStep;
 
 	private Stack stackWhenPressedMouse; // the stack on which the mouse was pressed
 	private Stack stackWhenReleaseMouse; // the stack over which the mouse was released
@@ -43,8 +46,9 @@ public class GameBoard implements Serializable {
 
 		newDeck(imagesOfCards, numberOfDecks);
 
-		buttons.add(new Button("SAVE", imagesOfButtons, 680, 105, 2));
-		buttons.add(new Button("LOAD", imagesOfButtons, 680+80, 105, 3));
+		buttons.add(new Button("UNDO", imagesOfButtons, 611, 105, 4));
+		buttons.add(new Button("SAVE", imagesOfButtons, 611 + 76, 105, 2));
+		buttons.add(new Button("LOAD", imagesOfButtons, 611 + 2*76, 105, 3));
 
 		List<CardType> cardTypes = new ArrayList<CardType>();
 		cardTypes.add(CardType.karo);
@@ -192,8 +196,8 @@ public class GameBoard implements Serializable {
 	}
 
 	public void drawGameBoard() {
-		stacks.stream().forEach(x -> x.drawStack(gc));
 		buttons.stream().forEach((x -> x.drawButton(gc)));
+		stacks.stream().forEach(x -> x.drawStack(gc));
 		animateCards.drawStack(gc);
 	}
 
@@ -300,12 +304,13 @@ public class GameBoard implements Serializable {
 			if (i == numberOfSourceGameStack) continue;
 			if (isCardFitsToStack(testCard, gameStacks[i])) {
 				System.out.println("karta: " + testCard + " pasuje do stosu " + gameStacks[i].getName());
-				if (numberOfSourceGameStack > -1)
-					if (!isPossibleToBackToSource(numberOfSourceGameStack))
-						counter++;
-					else;
-
-				else counter++;
+//				if (numberOfSourceGameStack > -1)
+//					if (!isPossibleToBackToSource(numberOfSourceGameStack))
+//						counter++;
+//					else;
+//
+//				else
+					counter++;
 			}
 		}
 		System.out.println("counter: " + counter);
@@ -358,12 +363,9 @@ public class GameBoard implements Serializable {
 		else return false;
 	}
 
-
-	public void actionOnPressedMouse(double x, double y) throws IOException, ClassNotFoundException {
+	public void actionOnPressedMouse(double x, double y) throws IOException {
 
 		System.out.println("naciśnięto klawisz myszki. Poz X: " + x + ". Poz Y: " + y);
-
-		//areaStack = stacks.stream().filter(z -> z.isMyActiveArea(x, y)).findFirst();
 
 		for (Stack stack : stacks){
 			if (stack.isMyActiveArea(x, y)){
@@ -375,12 +377,15 @@ public class GameBoard implements Serializable {
 		if (stackWhenPressedMouse != null) {
 			//stackWhenPressedMouse = areaStack.get();
 
-			if (stackWhenPressedMouse.getName().equals("startStack"))	{
+			if (stackWhenPressedMouse.getName().equals("startStack")) {
+
+				currentUndoStep = new Undo(stackWhenPressedMouse, putAwayStack, 1);
+				undoSteps.add(currentUndoStep);
+
 				moveCards(stackWhenPressedMouse, putAwayStack);
 				countPossibleMoves();
 			}
-			else
-			{
+			else {
 				double deltaX = x
 						- (stackWhenPressedMouse.getPositionXOnBoard()
 						+ stackWhenPressedMouse.getShiftCardX() * (stackWhenPressedMouse.getNumberShownCards() - (stackWhenPressedMouse.getStackSize() - stackWhenPressedMouse.getPressedCardNumberInStack())));
@@ -413,10 +418,8 @@ public class GameBoard implements Serializable {
 			}
 		}
 
-		//areaButton = buttons.stream().filter(z -> z.isMyActiveArea(x, y)).findFirst();
 		if (buttonPressed != null){
-			//buttonPressed = areaButton.get();
-			System.out.println("Nacisnięto button: " + buttonPressed.getName());
+			System.out.println("Naciśnięto button: " + buttonPressed.getName());
 			if (buttonPressed.getName().equals("SAVE")){
 				IOGame.savaGame(this);
 			}
@@ -425,18 +428,60 @@ public class GameBoard implements Serializable {
 
 				collectCardsToDeck();
 
-				String[] stackAsString = gameBoardAsString.split("!");
+				System.out.println(gameBoardAsString);
+
+				String[] undos = gameBoardAsString.split(" ");
+
+				String[] stackAsString = undos[0].split("!");
 
 				System.out.println(stackAsString.length);
+
+				System.out.println(Arrays.stream(stackAsString));
 
 				for (int i = 0; i < stackAsString.length; i++){
 					stacks.get(i).takeCardsFromDeck(stackAsString[i], deck);
 				}
 
-				System.out.println(deck.toString());
+				if (undos.length > 1) {
+					String undoStep[];
+					for (int i = 1; i < undos.length; i++) {
+						undoStep = undos[i].split("-");
+						undoSteps.add(new Undo(undoStep[0], undoStep[1], Integer.parseInt(undoStep[2])));
+					}
+				}
 
-				//Arrays.stream(stackAsString).forEach(z -> System.out.println(z.toString()));
+			}
 
+			if (buttonPressed.getName().equals("UNDO") && undoSteps.size() > 0){
+				System.out.println("akcja - UNDO");
+
+				currentUndoStep = undoSteps.get(undoSteps.size()-1);
+				undoSteps.remove(undoSteps.size()-1);
+
+				System.out.println("UNDO: Przeniesienie "
+						+ currentUndoStep.getNumberMovedCards()
+						+ " kart ze stosu "
+						+ currentUndoStep.getDestinationStackName()
+						+ " na stos "
+						+ currentUndoStep.getSourceStackName());
+
+
+				for (Stack stack : stacks){
+					if (stack.getName().equals(currentUndoStep.getDestinationStackName())){
+						stackWhenPressedMouse = stack;
+						break;
+					}
+				}
+
+				for (Stack stack : stacks){
+					if (stack.getName().equals(currentUndoStep.getSourceStackName())){
+						stackWhenReleaseMouse = stack;
+						break;
+					}
+				}
+
+				stackWhenPressedMouse.setPressedCardNumberInStack(stackWhenPressedMouse.getStackSize() - currentUndoStep.getNumberMovedCards());
+				moveCards(stackWhenPressedMouse, stackWhenReleaseMouse);
 
 			}
 			buttonPressed = null;
@@ -460,18 +505,18 @@ public class GameBoard implements Serializable {
 				}
 			}
 
-			//areaStack = stacks.stream().filter(z -> z.isMyArea(x, y)).findFirst();
-
 			boolean cardsMoved = false;
 
 			if (stackWhenReleaseMouse != null) {
-				//stackWhenReleaseMouse = areaStack.get();
 				System.out.println("odłożono myszkę na stosie: " + stackWhenReleaseMouse.getName());
 				System.out.println("Stan w handStack przed próbą operacji przeniesienia: " + handStack);
 
-				if (isAcceptCard(stackWhenReleaseMouse, handStack))
-				{
+				if (isAcceptCard(stackWhenReleaseMouse, handStack)) {
+					currentUndoStep = new Undo(handStack.getSourceStack(), stackWhenReleaseMouse, handStack.getStackSize());
+					undoSteps.add(currentUndoStep);
+
 					cardsMoved = moveCards(handStack, stackWhenReleaseMouse);
+
 					countPossibleMoves();
 					handStack.getSourceStack().setImageOnCards();
 				}
@@ -491,6 +536,10 @@ public class GameBoard implements Serializable {
 	public String getCode(){
 		StringBuilder gameBoardAsString = new StringBuilder();
 		stacks.stream().forEach(x -> {
+			gameBoardAsString.append(x.getCode());
+		});
+
+		undoSteps.stream().forEach(x -> {
 			gameBoardAsString.append(x.getCode());
 		});
 

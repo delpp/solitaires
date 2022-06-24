@@ -1,4 +1,4 @@
-package solitaire.model;
+package model;
 
 import java.util.ArrayDeque;
 import javafx.scene.input.MouseEvent;
